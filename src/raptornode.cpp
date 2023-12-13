@@ -1,8 +1,10 @@
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "constants.h"
 
 #include <sstream>
+#include <nlohmann/json.hpp>
 
 
 class RaptorNode
@@ -17,20 +19,31 @@ public:
 
     void messageCallback(const std_msgs::String::ConstPtr& msg)
     {
-        std::string originalMessage = msg->data;
-        std::string signature = getSignature();
-        std::string modifiedMessage = originalMessage + signature;
+        // Assume try-catch is not needed
+        nlohmann::json jsonMsg = nlohmann::json::parse(msg->data);
+    
+        // ... and no checking if a key exists
+        std::string originalMessage = jsonMsg["message"];
+    
+        std::string signature = getSignature(originalMessage);
+    
+        std::string firstName = RaptorConstants::FIRSTNAME;
+        std::string lastName = RaptorConstants::LASTNAME;
+
+        nlohmann::json newJsonMsg;
+        newJsonMsg[firstName + lastName] = signature;
+        std::string strMsg = newJsonMsg.dump();
 
         std_msgs::String modifiedMsg;
-        modifiedMsg.data = modifiedMessage;
+        modifiedMsg.data = strMsg;
         pub.publish(modifiedMsg);
     }
 
-    std::string getSignature()
+    std::string getSignature(std::string originalMessage)
     {
         std::time_t ts = std::time(0);
         std::stringstream ss;
-        ss << "<BartoszDurys/" << ts << ">";
+        ss << "<" << originalMessage << " / " << ts << ">";
         return ss.str();
     }
 
